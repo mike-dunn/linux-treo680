@@ -437,9 +437,17 @@ config MACH_TREO680
 	select MACH_PALM27X
 	select PALM_TREO
 	select PXA27x
+	select BCH_CONST_PARAMS if MTD_NAND_DOCG4
 	help
 	  Say Y here if you intend to run this kernel on Palm Treo 680
 	  smartphone.
+
+if MACH_TREO680 && MTD_NAND_DOCG4
+config BCH_CONST_M
+	default 14
+config BCH_CONST_T
+	default 4
+endif
 
 config MACH_RAUMFELD_RC
 	bool "Raumfeld Controller"
