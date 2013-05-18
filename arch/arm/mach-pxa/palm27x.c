@@ -145,12 +145,13 @@ void __init palm27x_lcd_init(int power, struct pxafb_mode_info *mode)
 	palm27x_lcd_screen.modes = mode;
 
 	if (gpio_is_valid(power)) {
-		if (!gpio_request(power, "LCD power")) {
+		if (gpio_request(power, "LCD power") < 0) {
 			pr_err("Palm27x: failed to claim lcd power gpio!\n");
 			return;
 		}
-		if (!gpio_direction_output(power, 1)) {
+		if (gpio_direction_output(power, 1) < 0) {
 			pr_err("Palm27x: lcd power configuration failed!\n");
+			gpio_free(power);
 			return;
 		}
 		palm27x_lcd_power = power;
