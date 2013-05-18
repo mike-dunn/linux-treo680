@@ -167,7 +167,7 @@ void __init palm27x_lcd_init(int power, struct pxafb_mode_info *mode)
 #if	defined(CONFIG_USB_PXA27X) || \
 	defined(CONFIG_USB_PXA27X_MODULE)
 static struct gpio_vbus_mach_info palm27x_udc_info = {
-	.gpio_vbus_inverted	= 1,
+	.gpio_pullup = -1,  /* pxa27x-udc driver handles D+ pull-up, not vbus */
 };
 
 static struct platform_device palm27x_gpio_vbus = {
@@ -180,17 +180,22 @@ static struct platform_device palm27x_gpio_vbus = {
 
 void __init palm27x_udc_init(int vbus, int pullup, int vbus_inverted)
 {
-	palm27x_udc_info.gpio_vbus	= vbus;
-	palm27x_udc_info.gpio_pullup	= pullup;
+	struct pxa2xx_udc_mach_info udc_mach_info = {
+		.udc_is_connected = NULL,
+		.udc_command = NULL,
+		.gpio_pullup_inverted = false,
+	};
+	udc_mach_info.gpio_pullup = pullup;
 
+	palm27x_udc_info.gpio_vbus	= vbus;
 	palm27x_udc_info.gpio_vbus_inverted = vbus_inverted;
 
-	if (!gpio_request(pullup, "USB Pullup")) {
-		gpio_direction_output(pullup,
-			palm27x_udc_info.gpio_vbus_inverted);
-		gpio_free(pullup);
-	} else
-		return;
+	/* driver will quietly ignore an invalid gpio */
+	if (!gpio_is_valid(pullup)) {
+		pr_err("Palm27x: USB D+ pull-up gpio is invalid!\n");
+ 		return;
+	}
+	pxa_set_udc_info(&udc_mach_info);
 
 	platform_device_register(&palm27x_gpio_vbus);
 }
