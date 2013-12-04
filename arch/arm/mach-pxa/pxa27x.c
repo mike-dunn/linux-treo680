@@ -39,6 +39,8 @@
 #include "devices.h"
 #include "clock.h"
 
+extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
+
 void pxa27x_clear_otgph(void)
 {
 	if (cpu_is_pxa27x() && (PSSR & PSSR_OTGPH))
@@ -398,6 +400,13 @@ void __init pxa27x_init_irq(void)
 	pxa_init_irq(34, pxa27x_set_wake);
 }
 
+#ifdef CONFIG_OF
+void __init pxa27x_dt_init_irq(void)
+{
+	pxa_dt_irq_init(pxa27x_set_wake);
+}
+#endif	/* CONFIG_OF */
+
 static struct map_desc pxa27x_io_desc[] __initdata = {
 	{	/* Mem Ctl */
 		.virtual	= (unsigned long)SMEMC_VIRT,
@@ -430,10 +439,12 @@ void __init pxa27x_set_i2c_power_info(struct i2c_pxa_platform_data *info)
 	pxa_register_device(&pxa27x_device_i2c_power, info);
 }
 
+#if !defined CONFIG_USE_OF
 static struct pxa_gpio_platform_data pxa27x_gpio_info __initdata = {
 	.irq_base	= PXA_GPIO_TO_IRQ(0),
 	.gpio_set_wake	= gpio_set_wake,
 };
+#endif
 
 static struct platform_device *devices[] __initdata = {
 	&pxa27x_device_udc,
@@ -448,8 +459,10 @@ static struct platform_device *devices[] __initdata = {
 	&pxa27x_device_ssp1,
 	&pxa27x_device_ssp2,
 	&pxa27x_device_ssp3,
+#if !defined CONFIG_USE_OF
 	&pxa27x_device_pwm0,
 	&pxa27x_device_pwm1,
+#endif
 };
 
 static int __init pxa27x_init(void)
@@ -471,7 +484,9 @@ static int __init pxa27x_init(void)
 		register_syscore_ops(&pxa2xx_mfp_syscore_ops);
 		register_syscore_ops(&pxa2xx_clock_syscore_ops);
 
+#if !defined CONFIG_USE_OF
 		pxa_register_device(&pxa27x_device_gpio, &pxa27x_gpio_info);
+#endif
 		ret = platform_add_devices(devices, ARRAY_SIZE(devices));
 	}
 

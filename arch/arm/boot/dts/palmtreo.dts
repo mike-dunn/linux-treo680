@@ -1,0 +1,98 @@
+
+/dts-v1/;
+/include/ "pxa27x.dtsi"
+
+/ {
+	model = "Palm Treo 680";
+	compatible = "palm,treo680", "palm,treo";
+
+	chosen {
+		bootargs = "mem=64M ip=192.168.11.102:::255.255.255.0:treo:usb0 mtdparts=Msys_Diskonchip_G4:1536k(protected_part)ro,1024k(bootloader_part),-(filesys_part)";
+	};
+
+	memory {
+		reg = <0xa0000000 0x04000000>;
+	};
+
+	pxabus {
+		backlight {
+		      	compatible = "pwm-backlight";
+		     	pwms = <&pwm0 5000000>;
+		     	brightness-levels = <255 128 64 32 16 8 4 0>;  /* decreasing because of inverted pwm output */
+		     	default-brightness-level = <6>;
+			/* gpios = <&gpio 77 0>, <&gpio 86 0>, <&gpio 25 1>, <&gpio 38 0>; */
+			/* patch supporting the above was nixed in favor of below... */
+			enable-gpios = <&gpio 38 0>;
+		};
+
+		keypad {
+		      	compatible = "marvell,pxa27x-keypad";
+			reg = <0x41500000 0x50>;
+			interrupts = <4>;
+		       	keypad,num-rows = <8>;
+		       	keypad,num-columns = <7>;
+		        marvell,direct-key-count = <1>;
+		        marvell,direct-key-mask = <0x01>;
+		       	marvell,direct-key-map = <0x00da>;  /* KEY_CONNECT */
+		       	marvell,debounce-interval = <0x001e001e>;
+		       	linux,keymap = <0x00000042	/* KEY_F8 */
+		       		        0x00010069	/* KEY_LEFT */
+				        0x0002001d	/* KEY_LEFTCTRL */
+				        0x00030026	/* KEY_L */
+				        0x0004001e	/* KEY_A */
+				        0x00050010	/* KEY_Q */
+				        0x00060019	/* KEY_P */
+
+		       		        0x01000061	/* KEY_RIGHTCTRL */
+		       		        0x0101006a	/* KEY_RIGHT */
+		       		        0x0102002a	/* KEY_LEFTSHIFT */
+		       		        0x0103002c	/* KEY_Z */
+		       		        0x0104001f	/* KEY_S */
+		       		        0x01050011	/* KEY_W */
+
+		       		        0x0200003b	/* KEY_F1 */
+		       		        0x02010067	/* KEY_UP */
+		       		        0x0202000b	/* KEY_0 */
+		       		        0x0203002d	/* KEY_X */
+		       		        0x02040020	/* KEY_D */
+		       		        0x02050012	/* KEY_E */
+
+		       		        0x03000044	/* KEY_F10 */
+		       		        0x0301006c	/* KEY_DOWN */
+		       		        0x03020039	/* KEY_SPACE */
+		       		        0x0303002e	/* KEY_C */
+		       		        0x03040021	/* KEY_F */
+		       		        0x03050013	/* KEY_R */
+
+		       		        0x04000058	/* KEY_F12 */
+		       		        0x04010060	/* KEY_KPENTER */
+		       		        0x04020064	/* KEY_RIGHTALT */
+		       		        0x0403002f	/* KEY_V */
+		       		        0x04040022	/* KEY_G */
+		       		        0x04050014	/* KEY_T */
+
+		       		        0x05000043	/* KEY_F9 */
+		       		        0x05010068	/* KEY_PAGEUP */
+		       		        0x05020034	/* KEY_DOT */
+		       		        0x05030030	/* KEY_B */
+		       		        0x05040023	/* KEY_H */
+		       		        0x05050015	/* KEY_Y */
+
+		       		        0x0600000f	/* KEY_TAB */
+		       		        0x0601006d	/* KEY_PAGEDOWN */
+		       		        0x0602001c	/* KEY_ENTER */
+		       		        0x06030031	/* KEY_N */
+		       		        0x06040024	/* KEY_J */
+		       		        0x06050016	/* KEY_U */
+
+		       		        0x07000040	/* KEY_F6 */
+		       		        0x07010018	/* KEY_O */
+		       		        0x0702000e	/* KEY_BACKSPACE */
+		       		        0x07030032	/* KEY_M */
+		       		        0x07040025	/* KEY_K */
+		       		        0x07050017>;	/* KEY_I */
+
+		};
+
+        };
+};

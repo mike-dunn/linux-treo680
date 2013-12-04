@@ -45,6 +45,7 @@
 #include <linux/platform_data/asoc-palm27x.h>
 #include <linux/platform_data/camera-pxa.h>
 #include <mach/palm27x.h>
+#include <linux/of_platform.h>
 
 #include <sound/pxa2xx-lib.h>
 
@@ -167,6 +168,7 @@ static unsigned long centro685_pin_config[] __initdata = {
 /******************************************************************************
  * GPIO keyboard
  ******************************************************************************/
+#if !defined CONFIG_USE_OF
 #if IS_ENABLED(CONFIG_KEYBOARD_PXA27x)
 static const unsigned int treo680_matrix_keys[] = {
 	KEY(0, 0, KEY_F8),		/* Red/Off/Power */
@@ -318,6 +320,7 @@ static void __init palmtreo_kpc_init(void)
 #else
 static inline void palmtreo_kpc_init(void) {}
 #endif
+#endif
 
 /******************************************************************************
  * USB host
@@ -444,19 +447,25 @@ static void __init treo_reserve(void)
 
 static void __init palmphone_common_init(void)
 {
+#if !defined CONFIG_USE_OF
 	pxa2xx_mfp_config(ARRAY_AND_SIZE(treo_pin_config));
 	pxa_set_ffuart_info(NULL);
 	pxa_set_btuart_info(NULL);
 	pxa_set_stuart_info(NULL);
+#endif
 	palm27x_pm_init(TREO_STR_BASE);
-	palm27x_lcd_init(GPIO_NR_TREO_BL_POWER, &palm_320x320_new_lcd_mode);
+	palm27x_lcd_init(-1, &palm_320x320_new_lcd_mode);
 	palm27x_udc_init(GPIO_NR_TREO_USB_DETECT, GPIO_NR_TREO_USB_PULLUP, 1);
 	palm27x_irda_init(GPIO_NR_TREO_IR_EN);
 	palm27x_ac97_init(-1, -1, -1, 95);
+#if !defined CONFIG_USE_OF
 	palm27x_pwm_init(GPIO_NR_TREO_BL_POWER, -1);
+#endif
 	palm27x_power_init(GPIO_NR_TREO_POWER_DETECT, -1);
 	palm27x_pmic_init();
+#if !defined CONFIG_USE_OF
 	palmtreo_kpc_init();
+#endif
 	palmtreo_uhc_init();
 	palmtreo_leds_init();
 }
@@ -510,6 +519,44 @@ void __init treo680_gpio_init(void)
 	gpio_free(GPIO_NR_TREO680_LCD_EN_N);
 }
 
+#if defined CONFIG_USE_OF
+extern void __init pxa27x_dt_init_irq(void);
+
+/*
+  dunn: This table forces DT code to assign the device names listed (3rd element
+  below).  This is necessary because clock lookup is done based on assumed
+  device names; see pxa27x_clkregs[] in pxa27x.c.  When clock management is converted
+  to DT, this table will not be needed, and DT will be allowed to assign its own device names.
+ */
+static const struct of_dev_auxdata pxa27x_auxdata_lookup[] __initconst = {
+	OF_DEV_AUXDATA("mrvl,pxa-uart",		0x40100000, "pxa2xx-uart.0", NULL),
+	OF_DEV_AUXDATA("mrvl,pxa-uart",		0x40200000, "pxa2xx-uart.1", NULL),
+	OF_DEV_AUXDATA("mrvl,pxa-uart",		0x40700000, "pxa2xx-uart.2", NULL),
+	OF_DEV_AUXDATA("mrvl,pxa-uart",		0x41600000, "pxa2xx-uart.3", NULL),
+	OF_DEV_AUXDATA("intel,pxa27x-gpio",	0x40e00000, "pxa27x-gpio", NULL),
+	OF_DEV_AUXDATA("marvell,pxa270-pwm",	0x40b00000, "pxa27x-pwm.0", NULL),
+	OF_DEV_AUXDATA("marvell,pxa270-pwm",	0x40b00010, "pxa27x-pwm.1", NULL),
+#if 0	/* no entries in the clock lookup table for these */
+	OF_DEV_AUXDATA("marvell,pxa270-pwm",	0x40c00000, "pxa27x-pwm.2", NULL),
+	OF_DEV_AUXDATA("marvell,pxa270-pwm",	0x40c00010, "pxa27x-pwm.3", NULL),
+#endif
+	OF_DEV_AUXDATA("marvell,pxa27x-keypad",	0x41500000, "pxa27x-keypad", NULL),
+	{}
+};
+
+static void __init treo680_init(void)
+{
+	pxa2xx_mfp_config(ARRAY_AND_SIZE(treo_pin_config));
+	pxa2xx_mfp_config(ARRAY_AND_SIZE(treo680_pin_config));
+	of_platform_populate(NULL, of_default_bus_match_table,
+			     pxa27x_auxdata_lookup, NULL);
+	treo680_gpio_init();
+	palmphone_common_init();
+	palm27x_mmc_init(GPIO_NR_TREO_SD_DETECT_N, GPIO_NR_TREO680_SD_READONLY,
+			GPIO_NR_TREO680_SD_POWER, 0);
+	treo680_docg4_flash_init();
+}
+#else
 static void __init treo680_init(void)
 {
 	pxa2xx_mfp_config(ARRAY_AND_SIZE(treo680_pin_config));
@@ -519,6 +566,7 @@ static void __init treo680_init(void)
 			GPIO_NR_TREO680_SD_POWER, 0);
 	treo680_docg4_flash_init();
 }
+#endif
 #endif
 
 #ifdef CONFIG_MACH_CENTRO
@@ -532,6 +580,23 @@ static void __init centro_init(void)
 #endif
 
 #ifdef CONFIG_MACH_TREO680
+#ifdef CONFIG_USE_OF
+static const char *pxa27x_dt_board_compat[] __initdata = {
+	"palm,treo680",
+	NULL,
+};
+DT_MACHINE_START(TREO680, "Palm Treo 680")
+	.map_io         = pxa27x_map_io,
+	.reserve	= treo_reserve, /* TODO: why is this needed? */
+	.nr_irqs	= PXA_NR_IRQS,
+	.init_irq       = pxa27x_dt_init_irq,
+	.handle_irq       = pxa27x_handle_irq,
+	.init_time	= pxa_timer_init,
+	.init_machine   = treo680_init,
+	.restart	= pxa_restart,
+	.dt_compat	= pxa27x_dt_board_compat,
+MACHINE_END
+#else
 MACHINE_START(TREO680, "Palm Treo 680")
 	.atag_offset    = 0x100,
 	.map_io         = pxa27x_map_io,
@@ -543,6 +608,7 @@ MACHINE_START(TREO680, "Palm Treo 680")
 	.init_machine   = treo680_init,
 	.restart	= pxa_restart,
 MACHINE_END
+#endif
 #endif
 
 #ifdef CONFIG_MACH_CENTRO

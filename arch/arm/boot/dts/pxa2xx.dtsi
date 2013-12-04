@@ -18,8 +18,10 @@
 		serial1 = &btuart;
 		serial2 = &stuart;
 		serial3 = &hwuart;
+/*
 		i2c0 = &pwri2c;
 		i2c1 = &pxai2c1;
+*/
 	};
 
 	cpus {
@@ -47,7 +49,7 @@
 		};
 
 		gpio: gpio@40e00000 {
-			compatible = "mrvl,pxa-gpio";
+			compatible = "intel,pxa27x-gpio";
 			#address-cells = <0x1>;
 			#size-cells = <0x1>;
 			reg = <0x40e00000 0x10000>;
@@ -102,7 +104,7 @@
 			interrupts = <7>;
 			status = "disabled";
 		};
-
+/*
 		pxai2c1: i2c@40301680 {
 			compatible = "mrvl,pxa-i2c";
 			reg = <0x40301680 0x30>;
@@ -131,5 +133,6 @@
 			reg = <0x40900000 0x3c>;
 			interrupts = <30 31>;
 		};
+*/
 	};
 };
